@@ -20,11 +20,10 @@ language sql stable
 set search_path = public
 as $$
     with comp as (
-        select list_price::float8 as price, wilson_score, median_playtime_h, price_band
-        from games
-        where in_universe and business_model = 'Pago' and not is_price_outlier
-          and (p_genre is null or genres @> array[p_genre])
-          and tags @> coalesce(p_tags, '{}')
+        select price, wilson_score, median_playtime_h, price_band
+        from mv_concept_base
+        where (p_genre is null or genres @> array[p_genre])
+          and (cardinality(p_tags) = 0 or tags @> p_tags)
     ),
     band as (
         select price_band, percentile_cont(0.5) within group (order by wilson_score) as w
@@ -49,7 +48,7 @@ $$;
 create or replace function public.rpc_health()
 returns table (games bigint, universe bigint)
 language sql stable set search_path = public as $$
-    select count(*), count(*) filter (where in_universe) from games;
+    select games, universe from mv_dataset_stats;
 $$;
 
 -- Refresco de vistas materializadas tras cada carga
@@ -59,4 +58,7 @@ returns void language sql security definer set search_path = public as $$
     refresh materialized view mv_price_distribution;
     refresh materialized view mv_tag_stats;
     refresh materialized view mv_tag_launches_by_year;
+    refresh materialized view mv_concept_base;
+    refresh materialized view mv_dataset_stats;
+    analyze mv_concept_base;
 $$;

@@ -60,5 +60,21 @@ where coalesce(g.exclusion_reason, 'pocas_resenas') = 'pocas_resenas'
   and g.release_year between 2006 and 2025
 group by t.tag, g.release_year;
 
+-- K15: base ligera de juegos comparables (solo las 6 columnas que usa el RPC).
+-- Leer la tabla completa (47 columnas) superaba el límite de 3 s del rol anon en géneros grandes.
+drop materialized view if exists public.mv_concept_base;
+create materialized view public.mv_concept_base as
+select app_id, list_price::float8 as price, wilson_score, median_playtime_h, price_band, genres, tags
+from public.games
+where in_universe and business_model = 'Pago' and not is_price_outlier;
+
+-- Conteos para el indicador de estado (evita count(*) sobre la tabla completa)
+drop materialized view if exists public.mv_dataset_stats;
+create materialized view public.mv_dataset_stats as
+select count(*) as games, count(*) filter (where in_universe) as universe from public.games;
+
 create index if not exists mv_segment_kpis_idx on public.mv_segment_kpis (genre, business_model, price_band);
 create unique index if not exists mv_tag_stats_idx on public.mv_tag_stats (tag);
+create unique index if not exists mv_concept_base_pk on public.mv_concept_base (app_id);
+create index if not exists mv_concept_base_genres on public.mv_concept_base using gin (genres);
+create index if not exists mv_concept_base_tags on public.mv_concept_base using gin (tags);

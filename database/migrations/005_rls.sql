@@ -8,7 +8,8 @@ create policy games_public_read on public.games
 revoke insert, update, delete, truncate on public.games from anon, authenticated;
 grant select on public.games, public.v_games_dashboard to anon, authenticated;
 grant select on public.mv_segment_kpis, public.mv_price_distribution,
-                public.mv_tag_stats, public.mv_tag_launches_by_year to anon, authenticated;
+                public.mv_tag_stats, public.mv_tag_launches_by_year,
+                public.mv_concept_base, public.mv_dataset_stats to anon, authenticated;
 grant execute on function public.rpc_concept_benchmark(text, text[], numeric) to anon, authenticated;
 grant execute on function public.rpc_health() to anon, authenticated;
 revoke execute on function public.refresh_kpi_views() from anon, authenticated, public;
