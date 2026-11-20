@@ -1,10 +1,13 @@
 # 🎮 Ecosistema Steam: Economía del Gaming, Precios y Retención
 
+[![CI](https://github.com/Gghoul11/steam-economy-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/Gghoul11/steam-economy-dashboard/actions/workflows/ci.yml)
+[![Demo](https://img.shields.io/badge/demo-aldo--steam--dashboard.vercel.app-2a78d6)](https://aldo-steam-dashboard.vercel.app/)
+
 Dashboard estratégico e interactivo que analiza **55 918 juegos de Steam** (de un catálogo de 125 855)
 para responder una pregunta clave de cualquier estudio independiente:
 **¿a qué precio, con qué modelo de monetización y en qué nicho conviene lanzar un juego?**
 
-🔗 **Demo:** _(pendiente — Fase 4)_
+🔗 **Demo en vivo:** https://aldo-steam-dashboard.vercel.app/
 
 ## Problema
 Cada año se publican más de 20 000 juegos en Steam. Las decisiones de precio y nicho suelen tomarse
@@ -32,19 +35,22 @@ género, tag, banda de precio y modelo de negocio.
 | Calidad | Vitest · oxlint · GitHub Actions |
 | Hosting | Vercel |
 
-## Arquitectura
+## Arquitectura (híbrida)
 ```
 games.csv ─► etl/ (extract → clean → validate → load → snapshot)
                      │                          │
                      ▼                          ▼
           PostgreSQL / Supabase       web/public/data/*.json
-          (vistas + RPC + RLS)        (snapshot estático)
+          (vistas + RPC + RLS)        (snapshot en el CDN de Vercel)
+                     │                          │
+       consultas en vivo (RPC)        gráficos: motor de KPIs en el navegador
                      └──────────┬───────────────┘
                                 ▼
-                 web/ React: motor de KPIs en el navegador
+                         web/ React (Vercel)
 ```
-El front intenta leer Supabase si existen `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`; si no están
-o la base no responde, usa el snapshot estático, así que la demo funciona siempre.
+- **Gráficos:** se calculan en el navegador sobre el snapshot (55 918 juegos, 2,2 MB comprimido), así cualquier combinación de filtros responde al instante.
+- **Consultas en vivo:** "Evalúa tu concepto" ejecuta `rpc_concept_benchmark` en PostgreSQL; si Supabase no responde, usa el mismo cálculo localmente (una prueba garantiza que ambos coinciden).
+- **Por qué híbrido:** descargar 56 k filas por la API REST del plan gratuito excede su límite de 3 s por consulta. Detalle en [`docs/fase-4-despliegue.md`](docs/fase-4-despliegue.md).
 
 ## Ejecutar en local
 ```powershell
@@ -59,6 +65,15 @@ npm install
 npm run dev        # http://localhost:5173
 npm test           # pruebas unitarias + criterios de aceptación con datos reales
 ```
+
+## Documentación
+| Documento | Contenido |
+|---|---|
+| [Fase 1 · Requisitos y arquitectura](docs/fase-1-requisitos-arquitectura.md) | Audiencia, objetivos, auditoría del dataset, stack, preprocesamiento |
+| [Fase 2 · Wireframes y KPIs](docs/fase-2-wireframes-kpis.md) | Catálogo de 15 KPIs, wireframes, lineamientos visuales |
+| [Fase 3 · Implementación](docs/fase-3-implementacion.md) | ETL, base de datos, front, pruebas y desviaciones justificadas |
+| [Fase 4 · Despliegue](docs/fase-4-despliegue.md) | Producción, seguridad, verificación y mantenimiento |
+| [Arquitectura](docs/architecture.md) · [Diccionario de datos](docs/data-dictionary.md) | Diagramas y las 47 columnas de `public.games` |
 
 ## Datos
 Fuente: *Steam Games Dataset* (FronkonGames, Kaggle), snapshot al 25-12-2025. El CSV crudo no se
