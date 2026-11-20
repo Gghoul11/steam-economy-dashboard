@@ -1,0 +1,22 @@
+# Datos crudos e intermedios (se regeneran con el ETL)
+data/raw/
+data/interim/
+data/processed/*.parquet
+
+# Entornos y secretos
+.env
+.env.*
+!.env.example
+etl/.venv/
+__pycache__/
+*.pyc
+
+# Front
+node_modules/
+web/dist/
+*.local
+.vercel
+
+# Sistema
+.DS_Store
+Thumbs.db
