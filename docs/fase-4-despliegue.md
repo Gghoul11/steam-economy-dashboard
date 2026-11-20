@@ -19,6 +19,16 @@
 - Supabase responde en vivo `rpc_concept_benchmark` (0,2–1,2 s medidos con la clave pública) y `rpc_health` (estado en el pie de página).
 - Si Supabase no responde, el panel usa el cálculo local; una prueba automática garantiza que ambos devuelven los mismos valores.
 
+### Optimización posterior al despliegue
+En producción, el panel mostró "Cálculo local (Supabase no disponible)" con géneros grandes: `rpc_concept_benchmark` leía la tabla completa (47 columnas) y con *Action* (20 692 comparables) tardaba 3,6 s, por encima del límite de 3 s. Se creó `mv_concept_base` (solo los 48 662 juegos comparables y las 6 columnas necesarias, 21 MB, índices GIN) y `mv_dataset_stats` para el indicador de estado.
+
+| Consulta | Antes | Después |
+|---|---|---|
+| Action sin tags | 3,6 s · error 57014 | 0,4–0,6 s |
+| Universo completo sin filtros | 0,6 s | 0,4–0,5 s |
+| RPG + Roguelike | 3,3 s | 0,2–0,3 s |
+| `rpc_health` | 1,8 s | 0,2–0,4 s |
+
 ## 3. Seguridad
 | Control | Verificación |
 |---|---|
